@@ -1,24 +1,31 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 
-# Автоматическая установка драйвера
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-driver.get("http://uitestingplayground.com/textinput")
+options = Options()
+options.add_argument('--ignore-certificate-errors')
+driver = webdriver.Chrome(options=options)
 
 try:
-    input_field = driver.find_element(By.ID, "newButtonName")
-    input_field.send_keys("SkyPro")
+    # Шаг 1: Открытие страницы
+    driver.get("http://uitestingplayground.com/textinput")
 
-    driver.find_element(By.ID, "updatingButton").click()
+    # Шаг 2: Ввод текста в поле
+    driver.find_element(By.ID, "newButtonName").send_keys("SkyPro")
 
-    button_text = driver.find_element(By.ID, "updatingButton").text
-    print("Текст кнопки:", button_text)
+    # Шаг 3: Клик по кнопке
+    button = driver.find_element(By.ID, "updatingButton")
+    button.click()
 
-    # Увеличенное время показа - 5 секунд
-    time.sleep(5)
+    # Шаг 4: Ожидание обновления текста
+    WebDriverWait(driver, 10).until(
+        EC.text_to_be_present_in_element((By.ID, "updatingButton"), "SkyPro")
+    )
+
+    # Шаг 5: Проверка и вывод результата
+    print(driver.find_element(By.ID, "updatingButton").text)
 
 finally:
     driver.quit()

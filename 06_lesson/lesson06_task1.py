@@ -18,7 +18,7 @@ button = driver.find_element(By.ID, "ajaxButton")
 button.click()
 
 # Явное ожидание появления текста в зеленой плашке
-wait = WebDriverWait(driver, 5)
+wait = WebDriverWait(driver, 20)
 success_text_element = wait.until(
     EC.text_to_be_present_in_element(
         (By.CLASS_NAME, "bg-success"),

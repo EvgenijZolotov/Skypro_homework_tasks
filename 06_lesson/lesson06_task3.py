@@ -1,21 +1,42 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
 
-driver = webdriver.Chrome()
-driver.get("https://bonigarcia.dev/selenium-webdriver-java/loading-images.html")
+# Настройки для браузера Chrome
+options = Options()
+# Игнорировать ошибки сертификатов (например, если сайт использует самоподписанный SSL)
+options.add_argument('--ignore-certificate-errors')
 
-# Явное ожидание загрузки всех 4 картинок
-wait = WebDriverWait(driver, 10)
-wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "#container")))
+# Инициализация WebDriver с заданными опциями
+driver = webdriver.Chrome(options=options)
 
-# Ждём, пока у 3-й картинки появится атрибут src
-images = driver.find_elements(By.CSS_SELECTOR, "#container")
-wait.until(lambda d: images[4].get_attribute("src") != "")
+try:
+    # Открываем целевую страницу с динамически загружаемыми изображениями
+    driver.get("https://bonigarcia.dev/selenium-webdriver-java/loading-images.html")
 
-# Получаем src у третьей картинки
-src_value = images[4].get_attribute("src")
-print(src_value)
+    # Явное ожидание: ждём, пока загрузятся все 4 изображения
+    WebDriverWait(driver, 15).until(
+        lambda d: len(d.find_elements(
+            By.CSS_SELECTOR, "#image-container img")) == 4
+    )
 
-driver.quit()
+    # Получаем список всех загруженных изображений в контейнере
+    images = driver.find_elements(By.CSS_SELECTOR, "#image-container img")
+
+    # Проверяем, что найдено как минимум 3 изображения
+    if len(images) >= 3:
+        # Получаем ссылку (атрибут src) третьего изображения (индексация с 0)
+        third_img_src = images[2].get_attribute("src")
+        print(third_img_src)  # Выводим ссылку на третье изображение
+    else:
+        # Если изображений меньше 3 — выводим сообщение об ошибке
+        print(f"Ошибка: найдено только {len(images)} изображений")
+
+except Exception as e:
+    # Обработка исключений: вывод ошибки, если что-то пошло не так
+    print(f"Произошла ошибка: {str(e)}")
+
+finally:
+    # Закрытие браузера в любом случае (успех или ошибка)
+    driver.quit()

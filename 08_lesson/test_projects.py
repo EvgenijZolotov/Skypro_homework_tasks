@@ -1,55 +1,88 @@
-# test_projects.py
-
+import requests
 import pytest
-from api_client.project_page import ProjectAPI
-
-api = ProjectAPI()
 
 
-@pytest.fixture(scope="module")
-def created_project():
-    """Фикстура: создаёт проект и возвращает его ID"""
-    response = api.create_project("Test Project")
-    assert response.status_code == 200
-    return response.json()["id"]
+BASE_URL = "https://ru.yougile.com/api-v2"
+TOKEN = ""
+HEADERS = {"Authorization": f"Bearer {TOKEN}"} 
 
-# === Позитивные тесты ===
-
-
-def test_create_project_positive():
-    response = api.create_project("Another Project")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Another Project"
-
-
-def test_get_project_positive(created_project):
-    response = api.get_project(created_project)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["id"] == created_project
+def test_create_project_post():
+    payload = {
+        "title": "autotest"
+    }
+    r = requests.post(
+        f"{BASE_URL}/projects",
+        json=payload,
+        headers=HEADERS,
+    )
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert isinstance(body.get("id"), str)
+    assert body["id"]
 
 
-def test_update_project_positive(created_project):
-    new_name = "Updated Name"
-    response = api.update_project(created_project, new_name)
-    assert response.status_code == 200
-    assert response.json()["name"] == new_name
+def test_create_project_post__400_without_title():
+    payload = {"users": {}}
+    r = requests.post(
+        f"{BASE_URL}/projects",
+        json=payload,
+        headers=HEADERS,
+    )
+    assert r.status_code == 400, r.text
 
-# === Негативные тесты ===
+def test_get_project_get__200():
+    r_create = requests.post(
+        f"{BASE_URL}/projects",
+        json={"title": "autotest"},
+        headers=HEADERS,
+    )
+    assert r_create.status_code == 201, r_create.text
+    project_id = r_create.json()["id"]
+
+    r_get = requests.get(
+        f"{BASE_URL}/projects/{project_id}",
+        headers=HEADERS,
+    )
+    assert r_get.status_code == 200, r_get.text
+    assert r_get.json().get("id") == project_id
 
 
-def test_create_project_negative_missing_name():
-    # Принудительно передаем пустое тело
-    response = api.create_project(name=None)
-    assert response.status_code in (400, 422)
+def test_get_project_get__404_unknown_id():
+    bogus_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    r = requests.get(
+        f"{BASE_URL}/projects/{bogus_id}",
+        headers=HEADERS,
+    )
+    assert r.status_code == 404, r.text
+
+def test_update_project_put():
+    create_payload = {
+        "title": "autotest",
+        "users": {},
+    }
+    r_create = requests.post(
+        f"{BASE_URL}/projects",
+        json=create_payload,
+        headers=HEADERS,
+    )
+    assert r_create.status_code == 201, r_create.text
+    project_id = r_create.json()["id"]
+
+    new_title = create_payload["title"] + "_upd"
+    r_put = requests.put(
+        f"{BASE_URL}/projects/{project_id}",
+        json={"title": new_title},
+        headers=HEADERS,
+    )
+    assert r_put.status_code == 200, r_put.text
+    assert r_put.json().get("id") == project_id
 
 
-def test_get_project_negative_invalid_id():
-    response = api.get_project("invalid-id-123")
-    assert response.status_code == 404
-
-
-def test_update_project_negative_invalid_id():
-    response = api.update_project("invalid-id-123", "Name")
-    assert response.status_code == 404
+def test_update_project_put__404_unknown_id():
+    bogus_id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    r = requests.put(
+        f"{BASE_URL}/projects/{bogus_id}",
+        json={"title": "x"},
+        headers=HEADERS,
+    )
+    assert r.status_code == 404, r.text

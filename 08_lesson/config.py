@@ -1,6 +1,2 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-API_TOKEN = os.getenv("API_TOKEN")
+API_TOKEN = ""
+API_BASE_URL = "https://ru.yougile.com"
